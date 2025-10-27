@@ -1,0 +1,25 @@
+{
+  "users": [
+    {
+      "id": "93ca6093-f8df-4724-9f8f-cf613d18e3df",
+      "email": "juhaj358@gmail.com",
+      "name": "juha",
+      "passwordHash": "e22fbf295e080e1ae1059f60eee4022f9f587e7a4f7f2e0887ee289f0924f102",
+      "likes": [
+        4558,
+        5234,
+        1078
+      ]
+    },
+    {
+      "id": "f8a370c0-5d2b-4928-b253-da4d8c08fdb0",
+      "email": "juha@mail.com",
+      "name": "juha",
+      "passwordHash": "e22fbf295e080e1ae1059f60eee4022f9f587e7a4f7f2e0887ee289f0924f102",
+      "likes": [
+        4558,
+        9745
+      ]
+    }
+  ]
+}

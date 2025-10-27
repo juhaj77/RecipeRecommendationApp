@@ -1,0 +1,55 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1, h2, h3 {
+  margin: 0 0 12px 0;
+}
+
+.card {
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.button {
+  background: black;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0 12px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  background: #f2f2f2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-right: 6px;
+}

@@ -1,0 +1,60 @@
+.rowAlign {
+  align-items: center;
+}
+
+.pill {
+  background: #eee;
+  color: #333;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.badgeRemoveLink {
+  margin-left: 6px;
+}
+
+.error {
+  color: red;
+}
+
+.mb8 {
+  margin-bottom: 8px;
+}
+
+.resultRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-weight: bold;
+}
+
+.ingredients {
+  font-size: 12px;
+  color: #666;
+}
+
+.muted {
+  font-size: 12px;
+  color: #999;
+}
+
+.metrics {
+  font-size: 12px;
+  color: #999;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px; /* small gap between score and likes */
+}
+
+.likes {
+  color: #2a7ae4; /* distinct color for likes */
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}

@@ -1,0 +1,28 @@
+{
+  "name": "recipe-suggestion-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --watch ./ --ext ts --exec \"node --loader ts-node/esm index.ts\"",
+    "debug": "nodemon --watch ./ --ext ts --exec \"node --inspect=9229 --loader ts-node/esm index.ts\"",
+    "start": "node --enable-source-maps dist/index.js",
+    "build": "tsc -p ."
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "preferTsExts": true
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "@tensorflow/tfjs": "^4.22.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "typescript": "~5.6.2",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.14.12",
+    "@types/express": "^4.17.21"
+  }
+}
