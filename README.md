@@ -1,3 +1,5 @@
+#### To get this working, download [recipes_data.csv](https://www.kaggle.com/datasets/wilmerarltstrmberg/recipe-dataset-over-2m) to the root of the project.
+
 # RecipeSuggestion Server — Code Documentation
 
 This document summarizes what the server does, why it’s built this way, and the rationale behind key data structures and model choices.
@@ -139,3 +141,4 @@ Ingredient strings often contain quantities, units, and punctuation. The server 
 ## Notes
 - The default runtime path uses the heuristic recommender to minimize memory and latency.
 - TensorFlow.js is available as a dependency for the optional model but should be enabled with care due to memory considerations.
+
