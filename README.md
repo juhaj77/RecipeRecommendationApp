@@ -27,7 +27,7 @@ The server is a small Express application that exposes a few REST endpoints for 
     - `POST /api/login` → mock login that checks email/password against local JSON.
   - Why: Minimal HTTP surface matching the client; input is validated/sanitized, and responses are trimmed to avoid excessive payloads.
 
-- `server/lib/csv.(ts|js)`
+- `server/lib/csv.ts`
   - Memory‑aware CSV reader tailored to the dataset. Streams the file in 64KB chunks, handles Windows newlines, and parses cells with basic quote handling.
   - Extracts arrays from stringified list columns (`ingredients`, `NER`), robust to slightly malformed JSON.
   - Exposes:
@@ -39,13 +39,13 @@ The server is a small Express application that exposes a few REST endpoints for 
     - One‑time `Array` cache to avoid re‑reading the CSV on each request.
     - Size caps (`maxRows`, `maxBytes`) to prevent accidental OOM on large files.
 
-- `server/lib/users.(ts|js)`
+- `server/lib/users.ts`
   - Simple file‑based user store in `data/users.json` (created on demand).
   - Hashes passwords with SHA‑256 (demo‑grade; use salted, slow KDF in production).
   - Exposes CRUD‑like helpers and `addLike`.
   - Why: Keeps state small and human‑inspectable; no external DB dependency. Uses a temp file + rename for basic atomicity.
 
-- `server/lib/model.js` (default in use)
+- `server/lib/model.ts` (default in use)
   - Token‑based ranker: normalize tokens from recipes (`NER` entities and title words), compute overlap with user‑selected tokens. Directions text is not used for scoring. Already‑liked items can be boosted when blending with the learnable scorer.
   - Why: Fast, deterministic, and memory‑safe—ideal for sparse textual signals at this scale.
   - Data structures: `Set` per recipe for quick membership checks; `Array` for results, sorted by score.
