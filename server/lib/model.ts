@@ -2,8 +2,8 @@
 // What: Build a vocab over title+NER tokens (no directions), vectorize recipes, train a 1x sigmoid unit on likes vs non-likes.
 // Why: Sigmoid suits binary like/not-like and outputs [0,1] scores that blend with heuristics.
 import * as tf from '@tensorflow/tfjs';
-import { loadAllRecipes } from './csv.js';
-import { getUserById } from './users.js';
+import { loadAllRecipes } from './csv.ts';
+import { getUserById } from './users.ts';
 
 // Tokenize title into simple word tokens (lowercased, letters-only, len>=2)
 function tokenizeTitle(text?: string): string[] {

@@ -12,9 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Local libs (server-specific copies that don't rely on process.cwd)
-import { allKnownIngredients, loadAllRecipes } from './lib/csv.js';
-import { recommend } from './lib/model.js';
-import { addLike, getUserById, verifyUser, createUser, readUsers } from './lib/users.js';
+import { allKnownIngredients, loadAllRecipes } from './lib/csv.ts';
+import { recommend } from './lib/model.ts';
+import { addLike, getUserById, verifyUser, createUser, readUsers } from './lib/users.ts';
 
 import type { RecipesRequest, RecipesResponse, LikeRequest, IngredientsResponse } from '../types/index.d.ts';
 
