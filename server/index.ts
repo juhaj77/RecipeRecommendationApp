@@ -157,13 +157,15 @@ app.get('/api/ingredients', (req: Request, res: Response<IngredientsResponse>) =
 // Endpoint: compute recommendations for selected ingredients (and optional user history).
 // What: Normalizes inputs, delegates to recommender, trims response; falls back to heuristic on errors.
 // Why: Keep response predictable and safe while allowing multiple recommender implementations.
-// Note: Recommendation is based on title words + NER tokens only (no directions weighting). Selected ingredients must be present in NER.
+// Note: Matching is substring-based against recipe ingredients, NER, and title tokens (directions are ignored for scoring).
 app.post('/api/recipes', async (req: Request<unknown, unknown, RecipesRequest>, res: Response<RecipesResponse>) => {
   // Safe-parse body
   const body = (req.body || {}) as RecipesRequest;
   try {
     const { userId, ingredients, limit } = body || {};
     const rawSelected = Array.isArray(ingredients) ? ingredients : [];
+    // Keep original lowercased queries for substring matching; also produce normalized variants
+    const qRaw = Array.from(new Set(rawSelected.map(x => String(x || '').toLowerCase()).filter(Boolean)));
     const qIngredients = Array.from(new Set(rawSelected.map(normalizeIngredientToken).filter(Boolean)));
 
     const lim = Math.max(1, Math.min(50, Number.isFinite(limit as number) ? (limit as number) : 10));
@@ -190,30 +192,40 @@ app.post('/api/recipes', async (req: Request<unknown, unknown, RecipesRequest>, 
 
     let out: any[] = [];
     try {
+      // Use normalized tokens as inputs for the ML path; model maps queries to vocab with substring logic internally.
       out = await recommend({ userId, selectedIngredients: qIngredients, limit: lim });
     } catch (e) {
-      // Heuristic fallback: score by title words + NER tokens only (equal weight)
+      // Heuristic fallback: substring score against title words, ingredient tokens, and NER tokens (equal weight per match)
       const recipes = loadAllRecipes();
-      const sel = new Set(qIngredients);
+      const qAll = Array.from(new Set([...qRaw, ...qIngredients]));
       const scored = recipes.map(r => {
-        const nerToks = (r.ner || []).map(x => normalizeIngredientToken(x)).filter(Boolean);
+        const nerToks = (r.ner || []).map(x => normalizeIngredientToken(x)).flatMap(s => s.split(' ')).filter(Boolean);
         const titleToks = tokenizeTitle(r.title);
+        const ingToks = (r.ingredients || []).flatMap((ing: any) => normalizeIngredientToken(String(ing)).split(' ')).filter(Boolean);
         let score = 0;
-        for (const x of nerToks) if (sel.has(x)) score += 1;
-        for (const x of titleToks) if (sel.has(x)) score += 1;
+        const incs = (tok: string) => qAll.some(q => tok.includes(q) || q.includes(tok));
+        for (const x of nerToks) if (incs(x)) score += 1;
+        for (const x of titleToks) if (incs(x)) score += 1;
+        for (const x of ingToks) if (incs(x)) score += 1;
         return { ...r, score };
       });
       scored.sort((a, b) => (b.score as number) - (a.score as number));
       out = scored.slice(0, lim) as any[];
     }
 
-    const sel = new Set(qIngredients);
+    // Final filter: require each selected query to appear as a substring in at least one of the recipe fields (ingredients/NER/title)
     const containsAll = (r: any) => {
-      if (!sel.size) return true;
-      // Require that every selected ingredient is present in NER tokens specifically (not directions/title)
-      const nerSetArr = (r.ner || []).map((x: string) => normalizeIngredientToken(x)).filter(Boolean);
-      const nerSet = new Set<string>(nerSetArr);
-      for (const s of sel) if (!nerSet.has(s)) return false;
+      const nerToks = (r.ner || []).map((x: string) => normalizeIngredientToken(x)).flatMap(s => s.split(' ')).filter(Boolean);
+      const titleToks = tokenizeTitle(r.title);
+      const ingStrs = (r.ingredients || []).map((ing: any) => String(ing).toLowerCase());
+      const ingToks = (r.ingredients || []).flatMap((ing: any) => normalizeIngredientToken(String(ing)).split(' ')).filter(Boolean);
+      const hay = new Set<string>([...nerToks, ...titleToks, ...ingToks, ...ingStrs]);
+      const hayArr = Array.from(hay);
+      for (const q of qRaw) {
+        let ok = false;
+        for (const h of hayArr) { if (h.includes(q) || q.includes(h)) { ok = true; break; } }
+        if (!ok) return false;
+      }
       return true;
     };
 

@@ -18,8 +18,18 @@
       "passwordHash": "e22fbf295e080e1ae1059f60eee4022f9f587e7a4f7f2e0887ee289f0924f102",
       "likes": [
         4558,
-        9745
+        9745,
+        12200,
+        10829,
+        10117
       ]
+    },
+    {
+      "id": "94d17835-ba61-4c6b-ad56-410dffe9f80c",
+      "email": "abu@mail.com",
+      "name": "abu",
+      "passwordHash": "9fe27f6f7d3c4301fa5f6c45a249caa0922d8ab3d155deb3a4e233a5cfdbd14c",
+      "likes": []
     }
   ]
 }

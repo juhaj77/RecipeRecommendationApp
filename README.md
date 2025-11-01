@@ -64,9 +64,9 @@ The server is a small Express application that exposes a few REST endpoints for 
 - `POST /api/recipes`
   - Body: `{ userId?: string, ingredients: string[], limit?: number }`
   - Normalizes input tokens, delegates to recommender, trims response fields.
-  - Matching is based on title words + NER entities only. Directions text is not used for scoring.
-  - All selected ingredient tokens must be present among a recipe’s NER tokens to be included in results.
-  - On errors, falls back to a simple heuristic using title+NER overlap (equal weight).
+  - Matching is substring-based against normalized recipe fields: ingredients, NER entities, and title tokens. Directions text is ignored for scoring.
+  - A recipe is included if every query term appears as a substring in at least one of those fields; exact string equality is not required (e.g., "beef" matches "ground beef").
+  - On errors, falls back to a simple heuristic using substring overlap over ingredients + title + NER (equal weight per match).
   - Response `recipe` objects now include:
     - `directions` (cleaned and trimmed, up to ~800 chars) for quick preview in UI. Cleaning steps:
       - Decode unicode escapes like `\u00b0` into the actual degree symbol `°` (so temperatures like `350°F` display correctly).
