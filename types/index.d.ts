@@ -4,6 +4,7 @@ export interface Recipe {
   id: number | string
   title: string
   ingredients: string[]
+  ingredientsTruncated?: boolean
   ner?: string[]
   directions?: string
   link?: string

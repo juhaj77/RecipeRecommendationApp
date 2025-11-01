@@ -128,15 +128,17 @@ function sanitizeRecipe(r: any, likesMap?: Map<string | number, number>) {
   const link = normalizeLink(rawLink, 160);
   const site = str(r?.site, 100);
   const directions = cleanDirections(r?.directions, 800);
+  const ingTotal = Array.isArray(r?.ingredients) ? r.ingredients.length : 0;
   const ing = Array.isArray(r?.ingredients)
     ? r.ingredients
         .slice(0, 8)
         .map((x: unknown) => str(String(x ?? ''), 60))
         .filter(Boolean)
     : [];
+  const ingredientsTruncated = ingTotal > 8;
   const score = typeof r?.score === 'number' ? Number(r.score.toFixed(4)) : undefined;
   const likesCount = likesMap ? (likesMap.get(r?.id) || 0) : undefined;
-  return { id: r?.id, title, ingredients: ing, link, site, score, directions, likesCount };
+  return { id: r?.id, title, ingredients: ing, ingredientsTruncated, link, site, score, directions, likesCount };
 }
 
 // Endpoint: suggest popular/known ingredient tokens for the UI autocomplete.
@@ -213,19 +215,47 @@ app.post('/api/recipes', async (req: Request<unknown, unknown, RecipesRequest>, 
       out = scored.slice(0, lim) as any[];
     }
 
-    // Final filter: require each selected query to appear as a substring in at least one of the recipe fields (ingredients/NER/title)
+    // Final filter: require each selected ingredient to be present in the recipe's ingredients AND in its NER list
     const containsAll = (r: any) => {
-      const nerToks = (r.ner || []).map((x: string) => normalizeIngredientToken(x)).flatMap(s => s.split(' ')).filter(Boolean);
-      const titleToks = tokenizeTitle(r.title);
+      // Ingredient haystack strictly from ingredient strings and their normalized tokens
       const ingStrs = (r.ingredients || []).map((ing: any) => String(ing).toLowerCase());
-      const ingToks = (r.ingredients || []).flatMap((ing: any) => normalizeIngredientToken(String(ing)).split(' ')).filter(Boolean);
-      const hay = new Set<string>([...nerToks, ...titleToks, ...ingToks, ...ingStrs]);
-      const hayArr = Array.from(hay);
-      for (const q of qRaw) {
+      const ingToks = (r.ingredients || [])
+        .flatMap((ing: any) => normalizeIngredientToken(String(ing)).split(' '))
+        .filter(Boolean);
+      const ingHay = Array.from(new Set<string>([...ingStrs, ...ingToks]));
+
+      // NER haystack strictly from NER strings and their normalized tokens
+      const nerStrs = (r.ner || []).map((x: any) => String(x).toLowerCase());
+      const nerToks = (r.ner || [])
+        .flatMap((x: any) => normalizeIngredientToken(String(x)).split(' '))
+        .filter(Boolean);
+      const nerHay = Array.from(new Set<string>([...nerStrs, ...nerToks]));
+
+      // Queries to enforce: raw queries + normalized-word tokens from queries
+      const qWordToks = qIngredients.flatMap(s => String(s || '').split(' ')).filter(Boolean);
+      const qMust = Array.from(new Set<string>([...qRaw, ...qWordToks]));
+
+      // Each query element must be a substring of at least one ingredient entry/token
+      for (const q of qMust) {
+        const needle = String(q).toLowerCase();
         let ok = false;
-        for (const h of hayArr) { if (h.includes(q) || q.includes(h)) { ok = true; break; } }
+        for (const h of ingHay) {
+          // Only allow hay.includes(needle) to avoid false positives like needle including very short h
+          if (h.includes(needle)) { ok = true; break; }
+        }
         if (!ok) return false;
       }
+
+      // Additionally, require each query element to appear in NER haystack
+      for (const q of qMust) {
+        const needle = String(q).toLowerCase();
+        let ok = false;
+        for (const h of nerHay) {
+          if (h.includes(needle)) { ok = true; break; }
+        }
+        if (!ok) return false;
+      }
+
       return true;
     };
 

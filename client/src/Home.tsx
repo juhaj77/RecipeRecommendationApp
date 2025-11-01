@@ -142,7 +142,7 @@ export default function Home() {
               <div className={styles.resultRow}>
                 <div>
                   <div className={styles.title}>{r.title}</div>
-                  <div className={styles.ingredients}>{(r.ingredients||[]).join(', ')}</div>
+                  <div className={styles.ingredients}>{(r.ingredients||[]).join(', ')}{r.ingredientsTruncated ? '...' : ''}</div>
                   <div className={styles.metrics}>
                     {typeof r.score === 'number' && <span>score: {r.score.toFixed(3)}</span>}
                     {typeof r.likesCount === 'number' && <span className={styles.likes}>likes: {r.likesCount}</span>}
