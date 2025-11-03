@@ -99,7 +99,13 @@ export default function Home() {
       return
     }
     try {
-      await fetch('/api/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, recipeId }) })
+      await fetch(
+          '/api/like',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, recipeId })
+          })
       alert('Added to favorites! Future recommendations will improve.')
     } catch {
       alert('Error adding to favorites')
@@ -111,7 +117,12 @@ export default function Home() {
       <div>
         <h2>Select ingredients</h2>
         <div className={styles.rowAlign}>
-          <input className="input" placeholder="Search ingredients (e.g., chicken, onion)" value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onInputKeyDown} />
+          <input
+              className="input"
+              placeholder="Search ingredients (e.g., chicken, onion)"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={onInputKeyDown} />
           <button className="button" onClick={search} disabled={loading}>{loading ? 'Searching...' : 'Search recipes'}</button>
           {canAddCustom && (
             <button className="button" onClick={() => addIngr(query.trim())}>Add "{query.trim()}"</button>
@@ -119,7 +130,11 @@ export default function Home() {
         </div>
         <div className={styles.mb8}>
           {selected.map(i => (
-            <span key={i}>{i} <a href="#" onClick={(e)=>{e.preventDefault();removeIngr(i);}} className={styles.badgeRemoveLink}>×</a></span>
+            <span key={i}>{i} <a
+                href="#"
+                onClick={(e)=>{e.preventDefault();removeIngr(i);}}
+                className={styles.badgeRemoveLink}>×</a>
+            </span>
           ))}
         </div>
         {filtered.length > 0 && (
