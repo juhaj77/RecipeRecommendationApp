@@ -167,10 +167,12 @@ app.post('/api/recipes', async (req: Request<unknown, unknown, RecipesRequest>, 
     const { userId, ingredients, limit } = body || {};
     const rawSelected = Array.isArray(ingredients) ? ingredients : [];
     // Keep original lowercased queries for substring matching; also produce normalized variants
-    const qRaw = Array.from(new Set(rawSelected.map(x => String(x || '').toLowerCase()).filter(Boolean)));
+    const qRaw = Array.from(new Set(rawSelected.map(x => String(x ?? '').toLowerCase().trim()).filter(Boolean)));
     const qIngredients = Array.from(new Set(rawSelected.map(normalizeIngredientToken).filter(Boolean)));
 
     const lim = Math.max(1, Math.min(50, Number.isFinite(limit as number) ? (limit as number) : 10));
+    // Expand candidate pool before final substring filter to avoid empty results when strict filter removes many top-N
+    const topK = Math.max(lim, Math.min(500, lim * 20));
 
     // Build likes count map from user store
     let likesMap = new Map<string | number, number>();
@@ -195,7 +197,8 @@ app.post('/api/recipes', async (req: Request<unknown, unknown, RecipesRequest>, 
     let out: any[] = [];
     try {
       // Use normalized tokens as inputs for the ML path; model maps queries to vocab with substring logic internally.
-      out = await recommend({ userId, selectedIngredients: qIngredients, limit: lim });
+      // Request a widened candidate pool (topK) so the final strict substring filter still has enough items to choose from.
+      out = await recommend({ userId, selectedIngredients: qIngredients, limit: topK });
     } catch (e) {
       // Heuristic fallback: substring score against title words, ingredient tokens, and NER tokens (equal weight per match)
       const recipes = loadAllRecipes();
@@ -212,45 +215,44 @@ app.post('/api/recipes', async (req: Request<unknown, unknown, RecipesRequest>, 
         return { ...r, score };
       });
       scored.sort((a, b) => (b.score as number) - (a.score as number));
-      out = scored.slice(0, lim) as any[];
+      // Widen candidate pool on heuristic fallback as well
+      out = scored.slice(0, topK) as any[];
     }
 
-    // Final filter: require each selected ingredient to be present in the recipe's ingredients AND in its NER list
+    // Final filter: a recipe must contain every query term in at least one of the following:
+    // - ingredient strings or their normalized tokens
+    // - NER strings or their normalized tokens
+    // - title tokens
+    // This aligns with README: substring-based match; directions are ignored for filtering/scoring.
     const containsAll = (r: any) => {
-      // Ingredient haystack strictly from ingredient strings and their normalized tokens
+      // Ingredient haystack: raw strings + normalized tokens
       const ingStrs = (r.ingredients || []).map((ing: any) => String(ing).toLowerCase());
       const ingToks = (r.ingredients || [])
         .flatMap((ing: any) => normalizeIngredientToken(String(ing)).split(' '))
         .filter(Boolean);
-      const ingHay = Array.from(new Set<string>([...ingStrs, ...ingToks]));
 
-      // NER haystack strictly from NER strings and their normalized tokens
+      // NER haystack: raw strings + normalized tokens
       const nerStrs = (r.ner || []).map((x: any) => String(x).toLowerCase());
       const nerToks = (r.ner || [])
         .flatMap((x: any) => normalizeIngredientToken(String(x)).split(' '))
         .filter(Boolean);
-      const nerHay = Array.from(new Set<string>([...nerStrs, ...nerToks]));
 
-      // Queries to enforce: raw queries + normalized-word tokens from queries
-      const qWordToks = qIngredients.flatMap(s => String(s || '').split(' ')).filter(Boolean);
-      const qMust = Array.from(new Set<string>([...qRaw, ...qWordToks]));
+      // Title haystack: tokens only (per design)
+      const titleToks = tokenizeTitle(r.title);
 
-      // Each query element must be a substring of at least one ingredient entry/token
+      // Combined haystack, deduped
+      const hay = Array.from(new Set<string>([...ingStrs, ...ingToks, ...nerStrs, ...nerToks, ...titleToks]));
+
+      // Queries to enforce: use only the original raw query strings (lowercased, trimmed).
+      // Rationale: avoid over-constraining multi-word queries by splitting them; honor true substring semantics.
+      const qMust = Array.from(new Set<string>(qRaw));
+
+      // Each query element must be a substring of at least one entry in the haystack
       for (const q of qMust) {
         const needle = String(q).toLowerCase();
         let ok = false;
-        for (const h of ingHay) {
-          // Only allow hay.includes(needle) to avoid false positives like needle including very short h
-          if (h.includes(needle)) { ok = true; break; }
-        }
-        if (!ok) return false;
-      }
-
-      // Additionally, require each query element to appear in NER haystack
-      for (const q of qMust) {
-        const needle = String(q).toLowerCase();
-        let ok = false;
-        for (const h of nerHay) {
+        for (const h of hay) {
+          // Use hay.includes(needle) to avoid false positives from very short hay tokens
           if (h.includes(needle)) { ok = true; break; }
         }
         if (!ok) return false;
